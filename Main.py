@@ -8,7 +8,7 @@ dataset = pd.read_csv("C:\MyStuff\CAR_DETAILS.csv")
 #Initializing ollama LLM
 ollama_llm = Ollama(model = "phi")
 
-# One shot prompt template
+# Zero shot prompt template
 prompt_template = """
 Use the following data to answer the question:
 Data: {data}

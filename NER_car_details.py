@@ -3,85 +3,118 @@ from langchain_community.llms import Ollama
 from langchain.prompts import PromptTemplate
 
 def read_pdf(file_path):
-    # Function to extract text from the provided PDF file
-    with open(file_path, "rb") as file:
-        reader = PyPDF2.PdfReader(file)
-        text = ""
-        for page in range(len(reader.pages)):
-            text += reader.pages[page].extract_text()
-    return text
+    try:
+        with open(file_path, "rb") as file:
+            reader = PyPDF2.PdfReader(file)
+            text = ""
+            for page in range(len(reader.pages)):
+                text += reader.pages[page].extract_text()
+        return text
+    except Exception as e:
+        print(f"Error reading PDF: {e}")
+        return ""
+
+def truncate_response(response_text, max_tokens=50):
+    tokens = response_text.split()  # Tokenize by splitting words
+    if len(tokens) > max_tokens:
+        return ' '.join(tokens[:max_tokens]) + "..."
+    return response_text
 
 # Path to the uploaded PDF file
-pdf_file_path = r'C:\MyStuff\comprehensive_car_brochure.pdf'
+pdf_file_path = r'C:\MyStuff\Sample_dataset.pdf'
 
 # Extract data from the PDF
 pdf_data = read_pdf(pdf_file_path)
 
 # Initialize the Ollama LLM
-ollama_llm = Ollama(model="phi")
+ollama_llm = Ollama(model="llama3.2")
 
-# Define a few-shot prompt with multiple examples
+# Define a few-shot prompt with examples and clear instructions
 prompt_template = """
-Here are some examples of how to extract car models based on specifications:
+You are provided with factual car specifications. Answer strictly with only the car model and the requested details, without adding any additional information or commentary. 
+If any requested detail is missing, reply with "Data not available."
+
+Examples:
 
 Example 1:
 Data: {example_data_1}
-Question: Show me all the models which have hybrid engines.
-Answer: {example_answer_1}
+Question: What is the Engine and Power of Maserati GranTurismo?
+Answer:
+Maserati GranTurismo
+Engine: V6 4.5L
+Power: 355 HP
 
 Example 2:
 Data: {example_data_2}
-Question: Which models come with FWD drive?
-Answer: {example_answer_2}
+Question: What is the top speed and torque of Aston Martin Vantage?
+Answer:
+Aston Martin Vantage
+Top Speed: 224 km/h
+Torque: 436 Nm
 
 Example 3:
 Data: {example_data_3}
-Question: Which models have horsepower greater than 300?
-Answer: {example_answer_3}
+Question: What is the transmission and drive type of Ferrari 488?
+Answer:
+Ferrari 488
+Transmission: Manual
+Drive Type: FWD
 
-Now, use the following data to answer the question:
+Example 4:
+Data: {example_data_4}
+Question: What is the torque and top speed of an Audi Q7?
+Answer:
+Audi Q7
+Torque: Data not available
+Top Speed: 210 km/h
+
+Now, using only the information provided, answer the following question in the same format:
 Data: {data}
 Question: {question}
 """
 
-# Provide example data for few-shot learning
+# Provide example data in a concise format
 example_data_1 = """
-The Ford Mustang exemplifies bold performance and modern innovation with a V8 3.0L engine that delivers 300 HP and
-400 Nm of torque. Its AWD system ensures stability on all terrains, while the hybrid fuel system supports a top speed of
-200 km/h and impressive acceleration, going from 0 to 100 km/h in just 4.0 seconds. Achieving a fuel efficiency of 10
-km/l, the Mustang comes equipped with an automatic transmission for smooth handling. Available in a selection of
-colors such as Red, Blue, Black, White, Silver, and Gray, the Mustang features a luxurious leather interior, Bose
-Premium Sound System, and an advanced infotainment system supporting both Apple CarPlay and Android Auto.
-Additional features include a sunroof, adaptive cruise control, heated seats, and blind spot monitoring, making this used
-model with a mileage of 5000 km a thrilling yet practical choice at $30k.
+Maserati GranTurismo
+The Maserati GranTurismo is equipped with a V6 4.5L gasoline engine, producing 355 HP and 433 Nm of torque.
+It has a manual transmission, FWD, and accelerates from 0 to 100 km/h in 3.4 seconds, with a top speed of 222 km/h.
+Additional features include heated seats, sunroof, adaptive cruise control, and blind spot monitoring.
 """
-example_answer_1 = "Ford Mustang"
+example_answer_1 = """Maserati GranTurismo
+Engine: V6 4.5L
+Power: 355 HP"""
 
 example_data_2 = """
-Combining power and elegance, the Dodge Charger is driven by a V8 4.0L engine, producing 310 HP and 406 Nm of
-torque. Its FWD drive type and automatic transmission make it a breeze to handle, achieving a top speed of 204 km/h
-and accelerating from 0 to 100 km/h in just 3.4 seconds. This gasoline-powered Charger offers a fuel efficiency of 12
-km/l. Available in a range of colors, including Red, Blue, Black, White, Silver, and Gray, it boasts a sophisticated leather
-interior with a Harman Kardon sound system. Equipped with an infotainment system supporting Apple CarPlay and
-Android Auto, this brand-new Charger, priced at $32k, features heated seats, adaptive cruise control, a sunroof, and
-blind spot monitoring
+Aston Martin Vantage
+This model has a V8 3.0L gasoline engine with 360 HP and 436 Nm torque.
+It features an AWD system, automatic transmission, top speed of 224 km/h, and accelerates from 0 to 100 km/h in 4.0 seconds.
+It includes heated seats, sunroof, adaptive cruise control, and blind spot monitoring.
 """
-example_answer_2 = "Dodge Charger"
+example_answer_2 = """Aston Martin Vantage
+Top Speed: 224 km/h
+Torque: 436 Nm"""
 
 example_data_3 = """
-The Chevrolet Camaro stands out with its aggressive style and powerful V6 3.5L engine, delivering 305 HP and 403 Nm
-of torque. Its FWD drive type, coupled with a manual transmission, offers an engaging driving experience. This
-gasoline-powered Camaro boasts a top speed of 202 km/h and accelerates from 0-100 km/h in just 3.7 seconds, with a
-fuel efficiency of 11 km/l. Available in colors like Red, Blue, Black, White, Silver, and Gray, the Camaro features an
-Alcantara interior, a premium Harman Kardon sound system, and a touchscreen infotainment system with Apple
-CarPlay and Android Auto. Priced at $31k, this brand-new model includes advanced features like adaptive cruise
-control, a sunroof, and heated seats, promising both luxury and performance.
+Ferrari 488
+The Ferrari 488 has a V6 3.5L gasoline engine, 365 HP, 439 Nm torque, and manual transmission.
+It’s equipped with FWD, accelerates from 0 to 100 km/h in 3.7 seconds, and reaches a top speed of 226 km/h.
 """
-example_answer_3 = "Chevrolet Camaro"
+example_answer_3 = """Ferrari 488
+Transmission: Manual
+Drive Type: FWD"""
+
+example_data_4 = """
+Audi Q7
+The Audi Q7 includes a V8 engine and automatic transmission, reaching a top speed of 210 km/h.
+"""
+
+example_answer_4 = """Audi Q7
+Torque: Data not available
+Top Speed: 210 km/h"""
 
 # Create the prompt template with input examples
 prompt = PromptTemplate(
-    input_variables=["example_data_1", "example_answer_1", "example_data_2", "example_answer_2", "example_data_3", "example_answer_3", "data", "question"],
+    input_variables=["example_data_1", "example_answer_1", "example_data_2", "example_answer_2", "example_data_3", "example_answer_3", "example_data_4", "example_answer_4", "data", "question"],
     template=prompt_template
 )
 
@@ -93,12 +126,16 @@ formatted_prompt = prompt.format(
     example_answer_2=example_answer_2,
     example_data_3=example_data_3,
     example_answer_3=example_answer_3,
+    example_data_4=example_data_4,
+    example_answer_4=example_answer_4,
     data=pdf_data,
-    question="Show me all the models which have a top speed more than 250"
+    question="What is the top speed and the torque of Lexus LC500?"
 )
 
 # Call the LLM with the formatted prompt
 response = ollama_llm.invoke(formatted_prompt)
 
+truncated_response = truncate_response(response, max_tokens=50)
+
 # Print the response from the model
-print(response)
+print(truncated_response)
