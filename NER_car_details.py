@@ -2,6 +2,7 @@ import PyPDF2
 from langchain_community.llms import Ollama
 from langchain.prompts import PromptTemplate
 
+# function to read from the pdf provided
 def read_pdf(file_path):
     try:
         with open(file_path, "rb") as file:
@@ -14,6 +15,7 @@ def read_pdf(file_path):
         print(f"Error reading PDF: {e}")
         return ""
 
+#function adding a token limit
 def truncate_response(response_text, max_tokens=50):
     tokens = response_text.split()  # Tokenize by splitting words
     if len(tokens) > max_tokens:
@@ -135,6 +137,7 @@ formatted_prompt = prompt.format(
 # Call the LLM with the formatted prompt
 response = ollama_llm.invoke(formatted_prompt)
 
+# Call the function to add the token limit and format the output
 truncated_response = truncate_response(response, max_tokens=50)
 
 # Print the response from the model
